@@ -185,21 +185,20 @@ img{max-width:100%;display:block;}
   .days-col{padding:clamp(30px,6vw,50px) clamp(16px,5vw,34px) 60px;}
   .mobile-strip{display:flex;align-items:flex-end;height:260px;border-radius:16px;background-size:cover;background-position:center;margin-bottom:-14px;position:relative;overflow:hidden;box-shadow:0 16px 40px -20px rgba(20,25,80,0.4);}
   .mobile-strip::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(10,12,40,0.5));}
-  .mobile-loc{position:relative;z-index:2;display:inline-flex;align-items:center;gap:7px;margin:0 0 14px 14px;padding:6px 13px;border-radius:100px;background:rgba(15,18,50,0.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.24);color:#fff;font-size:0.72rem;font-weight:500;letter-spacing:0.01em;box-shadow:0 4px 16px rgba(0,0,0,0.28);}
-  .mobile-loc .dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+  .mobile-loc{position:relative;z-index:2;display:inline-flex;align-items:center;gap:5px;margin:0 0 12px 12px;padding:4px 10px;border-radius:100px;background:rgba(15,18,50,0.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.24);color:#fff;font-size:0.62rem;font-weight:500;letter-spacing:0.01em;box-shadow:0 3px 12px rgba(0,0,0,0.28);}
+  .mobile-loc .dot{width:5px;height:5px;border-radius:50%;background:var(--green);}
   .card{border-radius:18px;padding-top:clamp(30px,7vw,40px);}
   .stats{grid-template-columns:repeat(3,1fr);gap:22px 14px;}
   .stat{border-left:none;}
-  .hero-meta span:not(:last-child)::after{content:"·";}
+  .hero-meta{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:8px 10px;}
+  .hero-meta span{font-size:0.8rem;gap:0;}
+  .hero-meta span:not(:last-child)::after{content:"";margin:0;}
+  .contact{grid-template-columns:1fr;text-align:center;justify-items:center;gap:20px;}
+  .contact .c-val{max-width:30ch;margin:0 auto;}
 }
 @media (max-width:560px){
   .stats{grid-template-columns:repeat(2,1fr);}
-  .hero-meta{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:8px 10px;}
-  .hero-meta span{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);border-radius:100px;padding:7px 14px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);font-size:0.8rem;gap:0;}
-  .hero-meta span:not(:last-child)::after{content:"";margin:0;}
   .slider-btn{width:36px;height:36px;}
-  .contact{grid-template-columns:1fr;text-align:center;justify-items:center;gap:20px;}
-  .contact .c-val{max-width:30ch;}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;}
@@ -212,7 +211,8 @@ img{max-width:100%;display:block;}
 <!-- ============ HERO ============ -->
 <header class="hero">
   <div class="hero-scene" aria-hidden="true"></div>
-  <video class="hero-video" autoplay muted loop playsinline preload="auto"
+  <video class="hero-video" autoplay muted loop playsinline webkit-playsinline preload="auto"
+         poster="https://images.pexels.com/videos/32504528/4k-aerial-4k-aerial-footage-4k-drone-4k-drone-footage-32504528.jpeg?auto=compress&amp;cs=tinysrgb&amp;h=1440&amp;w=2560&amp;fit=crop"
          referrerpolicy="no-referrer-when-downgrade" aria-hidden="true">
     <!-- HERO VIDEO: paste your MP4 URL below, or a data:video/mp4;base64,... string.
          If it fails to load the animated scene remains visible. -->
@@ -903,10 +903,32 @@ const HERO_VIDEO_SRC = "https://videos.pexels.com/video-files/32504528/13860649_
   const v = document.querySelector('.hero-video');
   const s = document.getElementById('heroVideoSrc');
   if (HERO_VIDEO_SRC) {
-    s.src = HERO_VIDEO_SRC; v.load();
+    s.src = HERO_VIDEO_SRC;
     v.addEventListener('playing', ()=> v.classList.add('playing'));
     v.addEventListener('error', ()=> v.style.display='none');
-    const p = v.play(); if (p && p.catch) p.catch(()=>{});
+
+    function attemptPlay(){
+      const p = v.play();
+      if (p && p.catch) p.catch(()=>{ /* blocked — will retry below */ });
+    }
+    v.load();
+    attemptPlay();
+    v.addEventListener('loadedmetadata', attemptPlay);
+    v.addEventListener('canplay', attemptPlay);
+
+    // some mobile/in-app browsers (e.g. WhatsApp, Instagram) silently block the
+    // very first programmatic play() call — retry once on the first touch/tap/scroll.
+    let unlocked = false;
+    function unlock(){
+      if (unlocked) return; unlocked = true;
+      attemptPlay();
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('scroll', unlock);
+    }
+    window.addEventListener('touchstart', unlock, { passive:true, once:true });
+    window.addEventListener('click', unlock, { once:true });
+    window.addEventListener('scroll', unlock, { passive:true, once:true });
   } else { v.style.display='none'; }
 })();
 
